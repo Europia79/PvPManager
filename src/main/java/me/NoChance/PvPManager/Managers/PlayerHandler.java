@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import me.NoChance.PvPManager.PvPManager;
 import me.NoChance.PvPManager.PvPlayer;
 import me.NoChance.PvPManager.Config.Variables;
+import me.NoChance.PvPManager.MySQL.Database;
 import me.NoChance.PvPManager.Tasks.CleanKillersTask;
 
 public class PlayerHandler {
@@ -21,11 +22,13 @@ public class PlayerHandler {
 	private HashMap<String, PvPlayer> players = new HashMap<String, PvPlayer>();
 	private ConfigManager configManager;
 	private PvPManager plugin;
+	private Database database;
 	private Economy economy;
 
 	public PlayerHandler(PvPManager plugin) {
 		this.plugin = plugin;
 		this.configManager = plugin.getConfigM();
+		this.database = plugin.getDataBase();
 		if (Variables.killAbuseEnabled)
 			new CleanKillersTask(this).runTaskTimer(plugin, 1200, Variables.killAbuseTime * 20);
 		if (Variables.fineEnabled || Variables.playerKillsEnabled) {
@@ -56,6 +59,7 @@ public class PlayerHandler {
 	private PvPlayer add(Player player) {
 		PvPlayer pvPlayer = new PvPlayer(player, plugin);
 		players.put(player.getName(), pvPlayer);
+		checkPlayerData(pvPlayer.getUUID());
 		return pvPlayer;
 	}
 
@@ -68,6 +72,31 @@ public class PlayerHandler {
 			}
 		}, 1800);
 		savePvPState(player.getUUID(), player.hasPvPEnabled());
+	}
+
+	private void checkPlayerData(final UUID uuid) {
+		new BukkitRunnable() {
+
+			public void run() {
+				database.connect();
+				if (!database.exists(uuid.toString()))
+					database.addPlayerEntry(uuid.toString());
+				database.close();
+			}
+
+		}.runTaskAsynchronously(plugin);
+	}
+
+	public void addPlayerKill(final UUID id) {
+		new BukkitRunnable() {
+
+			public void run() {
+				database.connect();
+				database.increment("kills", id.toString());
+				database.close();
+			}
+
+		}.runTaskAsynchronously(plugin);
 	}
 
 	public void savePvPState(UUID id, boolean pvpState) {
@@ -150,8 +179,7 @@ public class PlayerHandler {
 	}
 
 	private boolean setupEconomy() {
-		RegisteredServiceProvider<Economy> economyProvider = plugin.getServer().getServicesManager()
-				.getRegistration(net.milkbowl.vault.economy.Economy.class);
+		RegisteredServiceProvider<Economy> economyProvider = plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
 		if (economyProvider != null) {
 			economy = economyProvider.getProvider();
 		}
@@ -160,6 +188,10 @@ public class PlayerHandler {
 
 	public HashMap<String, PvPlayer> getPlayers() {
 		return players;
+	}
+
+	public PvPManager getPlugin() {
+		return plugin;
 	}
 
 }

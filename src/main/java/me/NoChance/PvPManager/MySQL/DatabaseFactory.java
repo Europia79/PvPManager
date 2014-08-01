@@ -1,26 +1,13 @@
 package me.NoChance.PvPManager.MySQL;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class DatabaseFactory {
 	private final JavaPlugin plugin;
-	private final List<Converter> converters = new ArrayList<Converter>();
 	
 	public DatabaseFactory(JavaPlugin plugin) {
 		this.plugin = plugin;
-	}
-	
-	/**
-	 * Register a new converter.
-	 * 
-	 * @param converter Converter to register
-	 */
-	public void registerConverter(Converter converter) {
-		converters.add(converter);
 	}
 	
 	/**
@@ -48,9 +35,4 @@ public class DatabaseFactory {
 		plugin.saveConfig();
 	}
 	
-	protected void doConversion(Database database) {
-		for(Converter converter : converters) {
-			converter.onDatabaseLoad(database);
-		}
-	}
 }

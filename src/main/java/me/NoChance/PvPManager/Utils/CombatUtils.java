@@ -74,7 +74,7 @@ public class CombatUtils {
 	private static boolean canAttack(PvPlayer attacker, PvPlayer attacked) {
 		if (!(attacker.isInCombat() && attacked.isInCombat()))
 			return false;
-		else if (Bukkit.getPluginManager().isPluginEnabled("Factions")) {
+		if (Bukkit.getPluginManager().isPluginEnabled("Factions")) {
 			UPlayer fAttacker = UPlayer.get(attacker.getPlayer());
 			UPlayer fAttacked = UPlayer.get(attacked.getPlayer());
 			return !fAttacker.getFactionId().equalsIgnoreCase(fAttacked.getFactionId());
