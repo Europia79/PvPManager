@@ -87,12 +87,24 @@ public class PlayerHandler {
 		}.runTaskAsynchronously(plugin);
 	}
 
-	public void addPlayerKill(final UUID id) {
+	public void addKill(final UUID id) {
 		new BukkitRunnable() {
 
 			public void run() {
 				database.connect();
 				database.increment("kills", id.toString());
+				database.close();
+			}
+
+		}.runTaskAsynchronously(plugin);
+	}
+	
+	public void addDeath(final UUID id) {
+		new BukkitRunnable() {
+
+			public void run() {
+				database.connect();
+				database.increment("deaths", id.toString());
 				database.close();
 			}
 

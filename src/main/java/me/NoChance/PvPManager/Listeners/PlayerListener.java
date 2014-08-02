@@ -108,7 +108,8 @@ public class PlayerListener implements Listener {
 			if (Variables.killAbuseEnabled)
 				killer.addVictim(player.getName());
 			if (Variables.playerKillsEnabled) {
-				ph.addPlayerKill(killer.getUUID());
+				ph.addKill(killer.getUUID());
+				ph.addDeath(pvPlayer.getUUID());
 				if (Variables.moneyReward > 0)
 					ph.giveReward(killer.getName());
 				if (Variables.commandsOnKillEnabled)

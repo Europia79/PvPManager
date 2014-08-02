@@ -38,6 +38,8 @@ public class Database {
 		try {
 			PreparedStatement ps = connection.prepareStatement("CREATE TABLE IF NOT EXISTS " + table.getName() + table.getUsage());
 			ps.executeUpdate();
+			PreparedStatement ps2 = connection.prepareStatement("CREATE INDEX IF NOT EXISTS kills ON users(kills Desc);");
+			ps2.executeUpdate();
 			this.table = table;
 		} catch (SQLException e) {
 			log("Failed to register table", e);
@@ -108,32 +110,6 @@ public class Database {
 		}
 	}
 	
-	/**
-	 * Insert new data to the database
-	 * 
-	 * @param table Table to insert data in
-	 * @param values Values to insert
-	 */
-	public void set(Object... values) {
-		try {
-			String valueCount = "";
-			for(int i = 0; i < values.length; i++) {
-				valueCount += "?";
-				if(i < (values.length - 1))
-					valueCount += ",";
-			}
-			String query = "INSERT INTO " + table.getName() + table.getValues() + " VALUES(" + valueCount + ");";
-			PreparedStatement ps = connection.prepareStatement(query);
-			for(int i = 0; i < values.length; i++) {
-				ps.setObject(i + 1, values[i]);
-			}
-			
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			log("Failed to insert data to database", e);
-		}
-	}
-	
 	public void addPlayerEntry(String id) {
 		try {
 			PreparedStatement ps = connection.prepareStatement("INSERT INTO users (uuid) VALUES(?);");
@@ -146,7 +122,7 @@ public class Database {
 	
 	public void increment(String toUpdate, String id){
 		try {
-			PreparedStatement ps = connection.prepareStatement("UPDATE users SET " + toUpdate + "=" + toUpdate + 1 + " WHERE uuid = ?;");
+			PreparedStatement ps = connection.prepareStatement("UPDATE users SET " + toUpdate + "=" + toUpdate + "+ 1 WHERE uuid = ?;");
 			ps.setObject(1, id);
 			ps.executeUpdate();
 		} catch (SQLException e) {
@@ -154,12 +130,13 @@ public class Database {
 		}
 	}
 	
-	public void executeQuery(String query) {
+	public void set(String toUpdate, String id, int number){
 		try {
-			PreparedStatement ps = connection.prepareStatement(query);
+			PreparedStatement ps = connection.prepareStatement("UPDATE users SET " + toUpdate + "=" + number + " WHERE uuid = ?;");
+			ps.setObject(1, id);
 			ps.executeUpdate();
 		} catch (SQLException e) {
-			log("Failed to insert data to database", e);
+			log("Failed to update database", e);
 		}
 	}
 	
@@ -217,26 +194,6 @@ public class Database {
 		} catch (SQLException e) {
 			log("Failed to check database", e);
 			return false;
-		}
-	}
-
-	/**
-	 * Update a value in the database
-	 * 
-	 * @param table Table to update
-	 * @param index Index to search with
-	 * @param toUpdate Index to update
-	 * @param indexValue Value to swarch with.
-	 * @param updateValue New value to update.
-	 */
-	public void update(String index, String toUpdate, Object indexValue, Object updateValue) {
-		try {
-			PreparedStatement ps = connection.prepareStatement("UPDATE " + table.getName() + " SET " + toUpdate + "=? WHERE " + index + "=?;");
-			ps.setObject(1, updateValue);
-			ps.setObject(2, indexValue);
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			log("Failed to update database", e);
 		}
 	}
 

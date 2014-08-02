@@ -95,8 +95,7 @@ public final class PvPManager extends JavaPlugin {
 		DatabaseConfigBuilder config = new DatabaseConfigBuilder(section, sqliteFile);
 		database = factory.getDatabase(config);
 		database.connect();
-		database.registerTable(new Table("users", "uuid CHAR(36) NOT NULL PRIMARY KEY, kills INT UNSIGNED DEFAULT 0"));
-		database.executeQuery("CREATE INDEX IF NOT EXISTS kills ON users(kills desc);");
+		database.registerTable(new Table("users", "uuid CHAR(36) NOT NULL PRIMARY KEY, kills INT UNSIGNED DEFAULT 0, deaths INT UNSIGNED DEFAULT 0"));
 		database.close();
 	}
 
@@ -116,9 +115,9 @@ public final class PvPManager extends JavaPlugin {
 	public PlayerHandler getPlayerHandler() {
 		return playerHandler;
 	}
-	
-	public Database getDataBase(){
-		return database;	
+
+	public Database getDataBase() {
+		return database;
 	}
 
 }
