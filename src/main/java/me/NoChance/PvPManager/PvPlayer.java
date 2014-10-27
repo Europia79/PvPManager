@@ -19,6 +19,7 @@ public class PvPlayer {
 	private boolean tagged;
 	private boolean pvpState;
 	private boolean pvpLogged;
+	private boolean override;
 	private long toggleTime;
 	private long respawnTime;
 	private NewbieTask newbieTask;
@@ -100,7 +101,7 @@ public class PvPlayer {
 	}
 
 	public boolean hasOverride() {
-		return getPlayer().hasPermission("pvpmanager.override");
+		return this.override;
 	}
 
 	public void disableFly() {
@@ -166,7 +167,8 @@ public class PvPlayer {
 
 	public void setPvP(boolean pvpState) {
 		this.pvpState = pvpState;
-		teamProfile.setPvP(pvpState);
+		if (Variables.toggleNametagsEnabled)
+			teamProfile.setPvP(pvpState);
 		if (!pvpState) {
 			message(Messages.PvP_Disabled);
 			if (Variables.toggleBroadcast)
@@ -219,5 +221,9 @@ public class PvPlayer {
 
 	public void setRespawnTime(long respawnTime) {
 		this.respawnTime = respawnTime;
+	}
+
+	public void toggleOverride() {
+		this.override = !override;
 	}
 }

@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
 import pgDev.bukkit.DisguiseCraft.DisguiseCraft;
@@ -83,11 +84,12 @@ public class PlayerListener implements Listener {
 		Player player = event.getPlayer();
 		PvPlayer pvPlayer = ph.get(player);
 		if (pvPlayer.isInCombat()) {
+			if (Variables.logToFile)
+				plugin.getLog().log(Messages.PvPLog_Broadcast.replace("%p", player.getName()));
 			if (Variables.broadcastPvpLog)
 				plugin.getServer().broadcastMessage(Messages.PvPLog_Broadcast.replace("%p", player.getName()));
 			if (Variables.punishmentsEnabled)
 				ph.applyPunishments(player);
-
 			pvPlayer.unTag();
 		}
 		ph.remove(pvPlayer);
@@ -96,6 +98,8 @@ public class PlayerListener implements Listener {
 	@EventHandler
 	public void onPlayerDeath(PlayerDeathEvent event) {
 		Player player = event.getEntity();
+		if (player.hasMetadata("NPC"))
+			return;
 		PvPlayer pvPlayer = ph.get(player);
 		if (pvPlayer.hasPvPLogged() && !Variables.dropExp) {
 			event.setKeepLevel(true);
@@ -103,19 +107,23 @@ public class PlayerListener implements Listener {
 		}
 		if (pvPlayer.isInCombat())
 			pvPlayer.unTag();
-		if (player.getKiller() != null && !player.getKiller().hasMetadata("NPC")) {
-			PvPlayer killer = ph.get(player.getKiller());
+		Player killer = player.getKiller();
+		if (killer != null && !killer.hasMetadata("NPC")) {
 			if (Variables.killAbuseEnabled)
-				killer.addVictim(player.getName());
-			if (Variables.playerKillsEnabled) {
-				ph.addKill(killer.getUUID());
-				ph.addDeath(pvPlayer.getUUID());
-				if (Variables.moneyReward > 0)
-					ph.giveReward(killer.getName());
-				if (Variables.commandsOnKillEnabled)
-					for (String command : Variables.commandsOnKill) {
-						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("<player>", killer.getName()));
-					}
+				ph.get(killer).addVictim(player.getName());
+			if (Variables.moneyReward > 0)
+				ph.giveReward(killer, player);
+			if (Variables.commandsOnKillEnabled)
+				for (String command : Variables.commandsOnKill) {
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("<player>", killer.getName()));
+				}
+			if(Variables.moneyPenalty > 0)
+				ph.applyPenalty(player);
+			if (Variables.transferDrops) {
+				for (ItemStack s : killer.getInventory().addItem(event.getDrops().toArray(new ItemStack[event.getDrops().size()])).values()) {
+					player.getWorld().dropItem(player.getLocation(), s);
+				}
+				event.getDrops().clear();
 			}
 		}
 		if (Variables.toggleOffOnDeath && player.hasPermission("pvpmanager.pvpstatus.change") && pvPlayer.hasPvPEnabled())

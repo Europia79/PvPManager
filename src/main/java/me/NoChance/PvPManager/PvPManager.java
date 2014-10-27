@@ -1,7 +1,9 @@
 package me.NoChance.PvPManager;
 
 import java.io.File;
+
 import me.NoChance.PvPManager.Commands.*;
+import me.NoChance.PvPManager.Config.LogFile;
 import me.NoChance.PvPManager.Config.Messages;
 import me.NoChance.PvPManager.Config.Variables;
 import me.NoChance.PvPManager.Lib.CustomMetrics;
@@ -25,6 +27,7 @@ public final class PvPManager extends JavaPlugin {
 	private ConfigManager configM;
 	private PlayerHandler playerHandler;
 	private Database database;
+	private LogFile log;
 
 	@Override
 	public void onEnable() {
@@ -35,6 +38,7 @@ public final class PvPManager extends JavaPlugin {
 		new CombatUtils(this);
 		getCommand("pvp").setExecutor(new PvP(playerHandler));
 		getCommand("pvpmanager").setExecutor(new PM(this));
+		getCommand("pvpoverride").setExecutor(new PvPOverride(playerHandler));
 		startMetrics();
 		if (Variables.updateCheck) {
 			new BukkitRunnable() {
@@ -58,6 +62,8 @@ public final class PvPManager extends JavaPlugin {
 	private void loadFiles() {
 		this.configM = new ConfigManager(this);
 		new Messages(this);
+		if (Variables.logToFile)
+			log = new LogFile(new File(getDataFolder(), "pvplog.txt"));
 	}
 
 	private void startListeners() {
@@ -118,6 +124,10 @@ public final class PvPManager extends JavaPlugin {
 
 	public Database getDataBase() {
 		return database;
+	}
+
+	public LogFile getLog() {
+		return log;
 	}
 
 }

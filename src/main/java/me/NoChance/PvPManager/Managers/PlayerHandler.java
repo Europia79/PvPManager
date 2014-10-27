@@ -2,7 +2,9 @@ package me.NoChance.PvPManager.Managers;
 
 import java.util.HashMap;
 import java.util.UUID;
+
 import net.milkbowl.vault.economy.Economy;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -11,8 +13,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.scheduler.BukkitRunnable;
+
 import me.NoChance.PvPManager.PvPManager;
 import me.NoChance.PvPManager.PvPlayer;
+import me.NoChance.PvPManager.Config.Messages;
 import me.NoChance.PvPManager.Config.Variables;
 import me.NoChance.PvPManager.MySQL.Database;
 import me.NoChance.PvPManager.Tasks.CleanKillersTask;
@@ -31,16 +35,14 @@ public class PlayerHandler {
 		this.database = plugin.getDataBase();
 		if (Variables.killAbuseEnabled)
 			new CleanKillersTask(this).runTaskTimer(plugin, 1200, Variables.killAbuseTime * 20);
-		if (Variables.fineEnabled || Variables.playerKillsEnabled) {
-			if (plugin.getServer().getPluginManager().isPluginEnabled("Vault")) {
-				if (setupEconomy()) {
-					plugin.getLogger().info("Vault Found! Using it for currency related features");
-				} else
-					plugin.getLogger().severe("Error! No Economy plugin found");
-			} else {
-				plugin.getLogger().severe("Vault not found! Features requiring Vault won't work!");
-				Variables.fineEnabled = false;
-			}
+		if (plugin.getServer().getPluginManager().isPluginEnabled("Vault")) {
+			if (setupEconomy()) {
+				plugin.getLogger().info("Vault Found! Using it for currency related features");
+			} else
+				plugin.getLogger().severe("Error! No Economy plugin found");
+		} else {
+			plugin.getLogger().severe("Vault not found! Features requiring Vault won't work!");
+			Variables.fineEnabled = false;
 		}
 		addOnlinePlayers();
 	}
@@ -117,16 +119,26 @@ public class PlayerHandler {
 
 	private void applyFine(Player p) {
 		if (economy != null) {
-			economy.withdrawPlayer(p.getName(), Variables.fineAmount);
+			economy.withdrawPlayer(p, Variables.fineAmount);
 		} else {
 			plugin.getLogger().severe("Tried to apply fine but no Economy plugin found!");
 			plugin.getLogger().severe("Disable fines feature or get an Economy plugin to fix this error");
 		}
 	}
 
-	public void giveReward(String name) {
+	public void applyPenalty(Player p) {
 		if (economy != null) {
-			economy.depositPlayer(name, Variables.moneyReward);
+			economy.withdrawPlayer(p, Variables.moneyPenalty);
+		} else {
+			plugin.getLogger().severe("Tried to apply penalty but no Economy plugin found!");
+			plugin.getLogger().severe("Disable money penalty on kill or get an Economy plugin to fix this error");
+		}
+	}
+
+	public void giveReward(Player killer, Player victim) {
+		if (economy != null) {
+			economy.depositPlayer(killer, Variables.moneyReward);
+			killer.sendMessage(Messages.Money_Reward.replace("%m", Integer.toString(Variables.moneyReward)).replace("%p", victim.getName()));
 		} else {
 			plugin.getLogger().severe("Tried to give reward but no Economy plugin found!");
 			plugin.getLogger().severe("Disable money reward on kill or get an Economy plugin to fix this error");
