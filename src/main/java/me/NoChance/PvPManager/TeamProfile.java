@@ -1,6 +1,7 @@
 package me.NoChance.PvPManager;
 
 import me.NoChance.PvPManager.Config.Variables;
+
 import org.bukkit.ChatColor;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -25,14 +26,14 @@ public class TeamProfile {
 				inCombat = scoreboard.registerNewTeam("InCombat");
 			inCombat.setPrefix(ChatColor.translateAlternateColorCodes('&', Variables.nameTagColor));
 		}
-		if (pvpOn == null) {
+		if (pvpOn == null && !Variables.toggleColorOn.equalsIgnoreCase("none")) {
 			if (scoreboard.getTeam("PvPOn") != null)
 				pvpOn = scoreboard.getTeam("PvPOn");
 			else
 				pvpOn = scoreboard.registerNewTeam("PvPOn");
 			pvpOn.setPrefix(ChatColor.translateAlternateColorCodes('&', Variables.toggleColorOn));
 		}
-		if (pvpOff == null) {
+		if (pvpOff == null && !Variables.toggleColorOff.equalsIgnoreCase("none")) {
 			if (scoreboard.getTeam("PvPOff") != null)
 				pvpOff = scoreboard.getTeam("PvPOff");
 			else
@@ -46,16 +47,28 @@ public class TeamProfile {
 	}
 
 	public void restoreTeam() {
-		if (previousTeam != null && scoreboard.getTeam(previousTeam.getName()) != null)
-			previousTeam.addPlayer(pvPlayer.getPlayer());
-		else
+		try {
+			if (previousTeam != null && scoreboard.getTeam(previousTeam.getName()) != null)
+				previousTeam.addPlayer(pvPlayer.getPlayer());
+			else
+				inCombat.removePlayer(pvPlayer.getPlayer());
+		} catch (IllegalStateException e) {
+			System.out.println("[PvPManager] Error restoring nametag for: " + pvPlayer.getName());
 			inCombat.removePlayer(pvPlayer.getPlayer());
+		}
 	}
 
 	public void setPvP(boolean state) {
-		if (state)
-			pvpOn.addPlayer(pvPlayer.getPlayer());
-		else
-			pvpOff.addPlayer(pvPlayer.getPlayer());
+		if (state) {
+			if (pvpOn == null)
+				restoreTeam();
+			else
+				pvpOn.addPlayer(pvPlayer.getPlayer());
+		} else {
+			if (pvpOff == null)
+				restoreTeam();
+			else
+				pvpOff.addPlayer(pvPlayer.getPlayer());
+		}
 	}
 }

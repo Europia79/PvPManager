@@ -1,5 +1,11 @@
 package me.NoChance.PvPManager.Utils;
 
+import me.NoChance.PvPManager.PvPManager;
+import me.NoChance.PvPManager.PvPlayer;
+import me.NoChance.PvPManager.Config.Variables;
+import me.NoChance.PvPManager.Listeners.WGListener;
+import me.NoChance.PvPManager.Managers.PlayerHandler;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -7,13 +13,7 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.plugin.Plugin;
 
-import com.massivecraft.factions.entity.UPlayer;
-
-import me.NoChance.PvPManager.PvPManager;
-import me.NoChance.PvPManager.PvPlayer;
-import me.NoChance.PvPManager.Config.Variables;
-import me.NoChance.PvPManager.Listeners.WGListener;
-import me.NoChance.PvPManager.Managers.PlayerHandler;
+import com.massivecraft.factions.entity.MPlayer;
 
 public class CombatUtils {
 
@@ -31,7 +31,22 @@ public class CombatUtils {
 			plugin.getLogger().info("WorldGuard Found! Enabling WorldGuard Support");
 		}
 		Plugin factions = Bukkit.getPluginManager().getPlugin("Factions");
-		useFactions = factions != null && Integer.valueOf(factions.getDescription().getVersion().replace(".", "")) > 182;
+
+		try {
+			if (factions != null) {
+				if (Integer.valueOf(factions.getDescription().getVersion().replace(".", "")) >= 270) {
+					useFactions = true;
+					Class.forName("com.massivecraft.factions.entity.MPlayer");
+					plugin.getLogger().info("Factions Found! Hooked successfully");
+				} else
+					plugin.getLogger().info("Update your Factions plugin to the latest version if you want PvPManager to hook into it successfully");
+			}
+		} catch (NumberFormatException e) {
+			plugin.getLogger().warning("Couldn't read Factions version, maybe it's a fork?");
+		} catch (ClassNotFoundException e) {
+			plugin.getLogger().warning("Factions broke their API again, an updated version of PvPManager should fix this soon");
+			useFactions = false;
+		}
 	}
 
 	public static boolean hasTimePassed(long toggleTime, int cooldown) {
@@ -81,11 +96,13 @@ public class CombatUtils {
 		if (!(attacker.isInCombat() && attacked.isInCombat()))
 			return false;
 		else if (useFactions) {
-			UPlayer fAttacker = UPlayer.get(attacker.getPlayer());
-			UPlayer fAttacked = UPlayer.get(attacked.getPlayer());
+			MPlayer fAttacker = MPlayer.get(attacker.getPlayer());
+			MPlayer fAttacked = MPlayer.get(attacked.getPlayer());
+			if (!fAttacker.hasFaction() || !fAttacked.hasFaction())
+				return true;
 			return !fAttacker.getFactionId().equalsIgnoreCase(fAttacked.getFactionId());
-		} else
-			return true;
+		}
+		return true;
 	}
 
 	public static CancelResult tryCancel(Player attacker, Player attacked) {

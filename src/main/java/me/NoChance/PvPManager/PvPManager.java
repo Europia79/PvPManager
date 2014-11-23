@@ -57,6 +57,7 @@ public final class PvPManager extends JavaPlugin {
 				p.unTag();
 			playerHandler.savePvPState(p.getUUID(), p.hasPvPEnabled());
 		}
+		playerHandler.removeTeams();
 	}
 
 	private void loadFiles() {

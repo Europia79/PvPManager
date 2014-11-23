@@ -2,7 +2,9 @@ package me.NoChance.PvPManager.Config;
 
 import java.util.Arrays;
 import java.util.List;
+
 import me.NoChance.PvPManager.Managers.ConfigManager;
+
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -53,7 +55,7 @@ public class Variables {
 	public static boolean useNameTag;
 	public static String locale;
 	public static int respawnProtection;
-	public static int moneyReward;
+	public static double moneyReward;
 	public static boolean commandsOnKillEnabled;
 	public static List<String> commandsOnKill = Arrays.asList("heal <player>");
 	public static boolean disableInvisibility;
@@ -62,7 +64,8 @@ public class Variables {
 	public static String toggleColorOff;
 	public static boolean logToFile;
 	public static boolean transferDrops;
-	public static int moneyPenalty;
+	public static double moneyPenalty;
+	public static boolean blockPickNewbies;
 
 	public Variables(ConfigManager configM) {
 		this.cm = configM;
@@ -113,7 +116,7 @@ public class Variables {
 		locale = cm.getConfig().getString("Locale", "en").toUpperCase();
 		ignoreNoDamageHits = cm.getConfig().getBoolean("Ignore No Damage Hits", false);
 		respawnProtection = cm.getConfig().getInt("Kill Abuse.Respawn Protection", 5);
-		moneyReward = cm.getConfig().getInt("Player Kills.Money Reward", 10);
+		moneyReward = cm.getConfig().getDouble("Player Kills.Money Reward", 10);
 		commandsOnKillEnabled = cm.getConfig().getBoolean("Player Kills.Commands On Kill.Enabled", false);
 		commandsOnKill = (List<String>) cm.getConfig().getList("Player Kills.Commands On Kill.Commands", commandsOnKill);
 		disableInvisibility = cm.getConfig().getBoolean("Disable Invisibility", false);
@@ -122,7 +125,8 @@ public class Variables {
 		toggleColorOff = cm.getConfig().getString("PvP Toggle.NameTags.Color Off", "&2");
 		logToFile = cm.getConfig().getBoolean("In Combat.Punishments.Log To File", true);
 		transferDrops = cm.getConfig().getBoolean("Player Kills.Transfer Drops", false);
-		moneyPenalty = cm.getConfig().getInt("Player Kills.Money Penalty", 10);
+		moneyPenalty = cm.getConfig().getDouble("Player Kills.Money Penalty", 10);
+		blockPickNewbies = cm.getConfig().getBoolean("Newbie Protection.Block Pick Items", false);
 	}
 
 	public static void helpMenu(Player player) {
@@ -131,6 +135,7 @@ public class Variables {
 		player.sendMessage(ChatColor.GOLD + "/pvp info " + ChatColor.WHITE + "| Check Your Player Info");
 		player.sendMessage(ChatColor.GOLD + "/pvp status " + ChatColor.WHITE + "| Check What is your PvP Status.");
 		player.sendMessage(ChatColor.GOLD + "/pvp status <player> " + ChatColor.WHITE + "| Check Another Player PvP Status.");
+		player.sendMessage(ChatColor.GOLD + "/pvpo " + ChatColor.WHITE + "| Override all PvP protections");
 		player.sendMessage(ChatColor.GOLD + "/pvp disable protection " + ChatColor.WHITE + "| Disable Newbie Protection");
 		player.sendMessage(ChatColor.GOLD + "/pm " + ChatColor.WHITE + "| Show This Help Page");
 		player.sendMessage(ChatColor.GOLD + "/pm update " + ChatColor.WHITE + "| Update to Latest Version");

@@ -83,6 +83,7 @@ public class ConfigManager {
 
 		this.config.set("Newbie Protection.Enabled", Variables.newbieProtectionEnabled);
 		this.config.set("Newbie Protection.Time(minutes)", Variables.newbieProtectionTime);
+		this.config.set("Newbie Protection.Block Pick Items", Variables.blockPickNewbies);
 
 		this.config.set("Update Check.Enabled", Variables.updateCheck);
 		this.config.set("Update Check.Auto Update", Variables.autoUpdate);
