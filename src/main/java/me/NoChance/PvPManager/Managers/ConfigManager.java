@@ -92,7 +92,7 @@ public class ConfigManager {
 	}
 
 	private void loadConfig() {
-		if (configVersion < 22) {
+		if (configVersion < 25) {
 			File configFile = new File(plugin.getDataFolder(), "config.yml");
 			if (configFile.exists()) {
 				config = new Config(plugin, "config.yml");

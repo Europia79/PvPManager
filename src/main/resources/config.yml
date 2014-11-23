@@ -6,13 +6,16 @@
 # +--------------------------------------------------------------------------+ #
 
 # Informs PvPManager if the config is updated, do not touch it unless you want to reset the config
-Config Version: 22
+Config Version: 25
 # This changes the plugin's messages to the specified language.
 # Currently there is - en ru ch es
 Locale: en
 
 # Should blood animation on PvP be enabled
 PvP Blood: true
+
+# Player instantly respawns after death! (Only version 1.7.10)
+Auto Respawn: true
 
 # Should soup instantly heal you
 Auto Soup:

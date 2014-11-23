@@ -8,11 +8,15 @@ import me.NoChance.PvPManager.Managers.PlayerHandler;
 import me.NoChance.PvPManager.Utils.CombatUtils;
 import me.NoChance.PvPManager.Utils.CombatUtils.CancelResult;
 import me.libraryaddict.disguise.DisguiseAPI;
+import net.minecraft.server.v1_7_R4.EntityPlayer;
+import net.minecraft.server.v1_7_R4.EnumClientCommand;
+import net.minecraft.server.v1_7_R4.PacketPlayInClientCommand;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_7_R4.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -30,6 +34,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import pgDev.bukkit.DisguiseCraft.DisguiseCraft;
 
@@ -56,11 +61,7 @@ public class PlayerListener implements Listener {
 
 		switch (result) {
 		case FAIL_OVERRIDE:
-			if (event.isCancelled())
-				event.setCancelled(false);
 		case FAIL:
-			if (!event.isCancelled())
-				onDamageActions(attacker, attacked);
 			break;
 		case NEWBIE:
 			attacker.sendMessage(Messages.Newbie_Protection_On_Hit);
@@ -97,7 +98,7 @@ public class PlayerListener implements Listener {
 
 	@EventHandler
 	public void onPlayerDeath(PlayerDeathEvent event) {
-		Player player = event.getEntity();
+		final Player player = event.getEntity();
 		if (player.hasMetadata("NPC"))
 			return;
 		PvPlayer pvPlayer = ph.get(player);
@@ -129,6 +130,13 @@ public class PlayerListener implements Listener {
 		if (Variables.toggleOffOnDeath && player.hasPermission("pvpmanager.pvpstatus.change") && pvPlayer.hasPvPEnabled())
 			pvPlayer.setPvP(false);
 
+		new BukkitRunnable() {
+			public void run() {
+				PacketPlayInClientCommand in = new PacketPlayInClientCommand(EnumClientCommand.PERFORM_RESPAWN);
+				EntityPlayer cPlayer = ((CraftPlayer) player).getHandle();
+				cPlayer.playerConnection.a(in);
+			}
+		}.runTask(plugin);
 	}
 
 	@EventHandler
