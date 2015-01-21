@@ -45,13 +45,14 @@ public final class PvPManager extends JavaPlugin {
 				public void run() {
 					checkForUpdates();
 				}
-			}.runTaskAsynchronously(this);
+			}.runTaskTimerAsynchronously(this, 0, 360000);
 		}
 		setupDatabase();
 	}
 
 	@Override
 	public void onDisable() {
+		playerHandler.getTagTask().cancel();
 		for (PvPlayer p : playerHandler.getPlayers().values()) {
 			if (p.isInCombat())
 				p.unTag();

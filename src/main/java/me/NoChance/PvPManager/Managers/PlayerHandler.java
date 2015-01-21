@@ -5,9 +5,11 @@ import java.util.UUID;
 
 import me.NoChance.PvPManager.PvPManager;
 import me.NoChance.PvPManager.PvPlayer;
+import me.NoChance.PvPManager.TeamProfile;
 import me.NoChance.PvPManager.Config.Messages;
 import me.NoChance.PvPManager.Config.Variables;
 import me.NoChance.PvPManager.Tasks.CleanKillersTask;
+import me.NoChance.PvPManager.Tasks.TagTask;
 import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.Bukkit;
@@ -35,6 +37,7 @@ public class PlayerHandler {
 	private PvPManager plugin;
 	private Database database;
 	private Economy economy;
+	private TagTask tagTask = new TagTask();
 
 	public PlayerHandler(PvPManager plugin) {
 		this.plugin = plugin;
@@ -52,6 +55,7 @@ public class PlayerHandler {
 			Variables.fineEnabled = false;
 		}
 		addOnlinePlayers();
+		tagTask.runTaskTimerAsynchronously(plugin, 20, 20);
 	}
 
 	private void addOnlinePlayers() {
@@ -71,17 +75,29 @@ public class PlayerHandler {
 		PvPlayer pvPlayer = new PvPlayer(player, plugin);
 		players.put(player.getName(), pvPlayer);
 		checkPlayerData(pvPlayer.getUUID());
+		if ((Variables.useNameTag || Variables.toggleNametagsEnabled) && players.size() == 1)
+			TeamProfile.setupTeams();
+		pvPlayer.loadPvPState();
 		return pvPlayer;
 	}
 
+	public void untag(PvPlayer p) {
+		tagTask.getTagged().remove(p);
+		p.unTag();
+	}
+
+	public void tag(PvPlayer p) {
+		tagTask.getTagged().add(p);
+	}
+
 	public void remove(final PvPlayer player) {
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new BukkitRunnable() {
+		new BukkitRunnable() {
 			public void run() {
 				if (player.getPlayer() == null) {
 					players.remove(player.getName());
 				}
 			}
-		}, Variables.toggleCooldown * 20);
+		}.runTaskLater(plugin, Variables.toggleCooldown * 20);
 		savePvPState(player.getUUID(), player.hasPvPEnabled());
 	}
 
@@ -223,8 +239,8 @@ public class PlayerHandler {
 		return players;
 	}
 
-	public PvPManager getPlugin() {
-		return plugin;
+	public TagTask getTagTask() {
+		return tagTask;
 	}
 
 }

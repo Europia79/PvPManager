@@ -3,6 +3,7 @@ package me.NoChance.PvPManager;
 import me.NoChance.PvPManager.Config.Variables;
 
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -13,27 +14,29 @@ public class TeamProfile {
 	private static Team pvpOff;
 	private Team previousTeam;
 	private PvPlayer pvPlayer;
-	private Scoreboard scoreboard;
+	private static Scoreboard scoreboard;
 
 	public TeamProfile(PvPlayer p) {
 		this.pvPlayer = p;
-		scoreboard = p.getPlayer().getScoreboard();
+		if (scoreboard == null)
+			scoreboard = p.getPlayer().getScoreboard();
 		previousTeam = scoreboard.getPlayerTeam(p.getPlayer());
-		if (inCombat == null) {
-			if (scoreboard.getTeam("InCombat") != null)
-				inCombat = scoreboard.getTeam("InCombat");
-			else
-				inCombat = scoreboard.registerNewTeam("InCombat");
-			inCombat.setPrefix(ChatColor.translateAlternateColorCodes('&', Variables.nameTagColor));
-		}
-		if (pvpOn == null && !Variables.toggleColorOn.equalsIgnoreCase("none")) {
+	}
+
+	public static void setupTeams() {
+		if (scoreboard.getTeam("InCombat") != null)
+			inCombat = scoreboard.getTeam("InCombat");
+		else
+			inCombat = scoreboard.registerNewTeam("InCombat");
+		inCombat.setPrefix(ChatColor.translateAlternateColorCodes('&', Variables.nameTagColor));
+		if (!Variables.toggleColorOn.equalsIgnoreCase("none")) {
 			if (scoreboard.getTeam("PvPOn") != null)
 				pvpOn = scoreboard.getTeam("PvPOn");
 			else
 				pvpOn = scoreboard.registerNewTeam("PvPOn");
 			pvpOn.setPrefix(ChatColor.translateAlternateColorCodes('&', Variables.toggleColorOn));
 		}
-		if (pvpOff == null && !Variables.toggleColorOff.equalsIgnoreCase("none")) {
+		if (!Variables.toggleColorOff.equalsIgnoreCase("none")) {
 			if (scoreboard.getTeam("PvPOff") != null)
 				pvpOff = scoreboard.getTeam("PvPOff");
 			else
@@ -43,7 +46,10 @@ public class TeamProfile {
 	}
 
 	public void setInCombat() {
-		inCombat.addPlayer(pvPlayer.getPlayer());
+		Player player = pvPlayer.getPlayer();
+		if (pvpOn != null || pvpOff != null)
+			previousTeam = scoreboard.getPlayerTeam(player);
+		inCombat.addPlayer(player);
 	}
 
 	public void restoreTeam() {

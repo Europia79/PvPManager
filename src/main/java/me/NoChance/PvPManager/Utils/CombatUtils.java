@@ -12,14 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.projectiles.ProjectileSource;
 
 import com.massivecraft.factions.entity.MPlayer;
 
 public class CombatUtils {
-
-	public enum CancelResult {
-		NEWBIE, NEWBIE_OTHER, PVPDISABLED, PVPDISABLED_OTHER, RESPAWN_PROTECTION, FAIL, FAIL_OVERRIDE
-	}
 
 	private static PlayerHandler ph;
 	private static boolean useFactions;
@@ -61,11 +58,14 @@ public class CombatUtils {
 			if (attacker instanceof Player && !attacker.hasMetadata("NPC"))
 				return true;
 			if (attacker instanceof Projectile) {
-				Entity shooter = (Entity) ((Projectile) attacker).getShooter();
-				if (shooter instanceof Player && !shooter.equals(defender) && !shooter.hasMetadata("NPC")) {
-					if (Variables.ignoreNoDamageHits && event.getDamage() == 0)
-						return false;
-					return true;
+				ProjectileSource projSource = ((Projectile) attacker).getShooter();
+				if (projSource instanceof Player) {
+					Entity shooter = (Entity) projSource;
+					if (!shooter.equals(defender) && !shooter.hasMetadata("NPC")) {
+						if (Variables.ignoreNoDamageHits && event.getDamage() == 0)
+							return false;
+						return true;
+					}
 				}
 			}
 		}

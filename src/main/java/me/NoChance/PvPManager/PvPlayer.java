@@ -2,14 +2,14 @@ package me.NoChance.PvPManager;
 
 import java.util.HashMap;
 import java.util.UUID;
+
 import me.NoChance.PvPManager.Config.Messages;
 import me.NoChance.PvPManager.Config.Variables;
 import me.NoChance.PvPManager.Tasks.NewbieTask;
-import me.NoChance.PvPManager.Tasks.TagTask;
 import me.NoChance.PvPManager.Utils.CombatUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 public class PvPlayer {
 
@@ -22,8 +22,8 @@ public class PvPlayer {
 	private boolean override;
 	private long toggleTime;
 	private long respawnTime;
+	private long taggedTime;
 	private NewbieTask newbieTask;
-	private BukkitTask tagTask;
 	private HashMap<String, Integer> victim = new HashMap<String, Integer>();
 	private PvPManager plugin;
 	private TeamProfile teamProfile;
@@ -35,14 +35,6 @@ public class PvPlayer {
 		this.newbieTask = new NewbieTask(this);
 		if (Variables.useNameTag || Variables.toggleNametagsEnabled)
 			teamProfile = new TeamProfile(this);
-		if (!player.hasPlayedBefore()) {
-			this.pvpState = Variables.defaultPvp;
-			if (Variables.newbieProtectionEnabled)
-				setNewbie(true);
-		} else if (!plugin.getConfigM().getUserFile().getStringList("players").contains(id.toString()))
-			this.pvpState = true;
-		if (player.hasPermission("pvpmanager.nopvp"))
-			this.pvpState = false;
 	}
 
 	public String getName() {
@@ -128,12 +120,11 @@ public class PvPlayer {
 	public void setTagged(boolean attacker, String tagger) {
 		if (getPlayer().hasPermission("pvpmanager.nocombat"))
 			return;
-		if (tagged) {
-			renewTag();
-			return;
-		}
 
-		tagTask = new TagTask(this).runTaskLater(plugin, Variables.timeInCombat * 20);
+		taggedTime = System.currentTimeMillis();
+
+		if (tagged)
+			return;
 
 		if (Variables.useNameTag)
 			teamProfile.setInCombat();
@@ -145,6 +136,7 @@ public class PvPlayer {
 				message(Messages.Tagged_Defender.replace("%p", tagger));
 
 		this.tagged = true;
+		plugin.getPlayerHandler().tag(this);
 	}
 
 	public void unTag() {
@@ -156,13 +148,7 @@ public class PvPlayer {
 				message(Messages.Out_Of_Combat);
 		}
 
-		tagTask.cancel();
 		this.tagged = false;
-	}
-
-	public void renewTag() {
-		tagTask.cancel();
-		tagTask = new TagTask(this).runTaskLater(plugin, Variables.timeInCombat * 20);
 	}
 
 	public void setPvP(boolean pvpState) {
@@ -223,7 +209,25 @@ public class PvPlayer {
 		this.respawnTime = respawnTime;
 	}
 
-	public void toggleOverride() {
+	public boolean toggleOverride() {
 		this.override = !override;
+		return this.override;
+	}
+
+	public long getTaggedTime() {
+		return taggedTime;
+	}
+
+	public void loadPvPState() {
+		if (getPlayer().hasPermission("pvpmanager.nopvp"))
+			this.pvpState = false;
+		else if (!getPlayer().hasPlayedBefore()) {
+			this.pvpState = Variables.defaultPvp;
+			if (Variables.newbieProtectionEnabled)
+				setNewbie(true);
+		} else if (!plugin.getConfigM().getUserFile().getStringList("players").contains(id.toString()))
+			this.pvpState = true;
+		if (Variables.toggleNametagsEnabled)
+			teamProfile.setPvP(this.pvpState);
 	}
 }

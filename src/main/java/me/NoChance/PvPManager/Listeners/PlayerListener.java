@@ -5,8 +5,8 @@ import me.NoChance.PvPManager.PvPlayer;
 import me.NoChance.PvPManager.Config.Messages;
 import me.NoChance.PvPManager.Config.Variables;
 import me.NoChance.PvPManager.Managers.PlayerHandler;
+import me.NoChance.PvPManager.Utils.CancelResult;
 import me.NoChance.PvPManager.Utils.CombatUtils;
-import me.NoChance.PvPManager.Utils.CombatUtils.CancelResult;
 import me.libraryaddict.disguise.DisguiseAPI;
 import net.minecraft.server.v1_7_R4.EntityPlayer;
 import net.minecraft.server.v1_7_R4.EnumClientCommand;
@@ -99,11 +99,13 @@ public class PlayerListener implements Listener {
 		Player attacker = getAttacker(event);
 		Player attacked = (Player) event.getEntity();
 
-		if (CombatUtils.tryCancel(attacker, attacked).equals(CancelResult.FAIL))
+		CancelResult result = CombatUtils.tryCancel(attacker, attacked);
+		
+		if (result == CancelResult.FAIL || result == CancelResult.FAIL_OVERRIDE)
 			onDamageActions(attacker, attacked);
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler
 	public void onPlayerLogout(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
 		PvPlayer pvPlayer = ph.get(player);
@@ -116,7 +118,7 @@ public class PlayerListener implements Listener {
 				plugin.getServer().broadcastMessage(Messages.PvPLog_Broadcast.replace("%p", player.getName()));
 			if (Variables.punishmentsEnabled)
 				ph.applyPunishments(player);
-			pvPlayer.unTag();
+			ph.untag(pvPlayer);
 		}
 		ph.remove(pvPlayer);
 	}
@@ -124,6 +126,7 @@ public class PlayerListener implements Listener {
 	@EventHandler
 	public void onPlayerDeath(PlayerDeathEvent event) {
 		final Player player = event.getEntity();
+
 		if (player.hasMetadata("NPC"))
 			return;
 		PvPlayer pvPlayer = ph.get(player);
@@ -134,29 +137,30 @@ public class PlayerListener implements Listener {
 			event.setDroppedExp(0);
 		}
 		if (pvPlayer.isInCombat())
-			pvPlayer.unTag();
+			ph.untag(pvPlayer);
 		Player killer = player.getKiller();
-		if (killer != null && !killer.hasMetadata("NPC")) {
-			if (Variables.killAbuseEnabled)
-				ph.get(killer).addVictim(player.getName());
-			if (Variables.moneyReward > 0)
-				ph.giveReward(killer, player);
-			if (Variables.commandsOnKillEnabled)
-				for (String command : Variables.commandsOnKill) {
-					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("<player>", killer.getName()));
+		if (CombatUtils.PMAllowed(player.getWorld().getName())) {
+			if (killer != null && !killer.equals(player) && !killer.hasMetadata("NPC")) {
+				if (Variables.killAbuseEnabled)
+					ph.get(killer).addVictim(player.getName());
+				if (Variables.moneyReward > 0)
+					ph.giveReward(killer, player);
+				if (Variables.commandsOnKillEnabled)
+					for (String command : Variables.commandsOnKill) {
+						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("<player>", killer.getName()));
+					}
+				if (Variables.moneyPenalty > 0)
+					ph.applyPenalty(player);
+				if (Variables.transferDrops) {
+					for (ItemStack s : killer.getInventory().addItem(event.getDrops().toArray(new ItemStack[event.getDrops().size()])).values()) {
+						player.getWorld().dropItem(player.getLocation(), s);
+					}
+					event.getDrops().clear();
 				}
-			if (Variables.moneyPenalty > 0)
-				ph.applyPenalty(player);
-			if (Variables.transferDrops) {
-				for (ItemStack s : killer.getInventory().addItem(event.getDrops().toArray(new ItemStack[event.getDrops().size()])).values()) {
-					player.getWorld().dropItem(player.getLocation(), s);
-				}
-				event.getDrops().clear();
 			}
+			if (Variables.toggleOffOnDeath && player.hasPermission("pvpmanager.pvpstatus.change") && pvPlayer.hasPvPEnabled())
+				pvPlayer.setPvP(false);
 		}
-		if (Variables.toggleOffOnDeath && player.hasPermission("pvpmanager.pvpstatus.change") && pvPlayer.hasPvPEnabled())
-			pvPlayer.setPvP(false);
-
 		new BukkitRunnable() {
 			public void run() {
 				PacketPlayInClientCommand in = new PacketPlayInClientCommand(EnumClientCommand.PERFORM_RESPAWN);
@@ -247,7 +251,7 @@ public class PlayerListener implements Listener {
 		if (pvPlayer == null)
 			return;
 		if (pvPlayer.isInCombat() && !event.getReason().equalsIgnoreCase("Illegal characters in chat"))
-			pvPlayer.unTag();
+			ph.untag(pvPlayer);
 	}
 
 	@EventHandler
@@ -277,11 +281,13 @@ public class PlayerListener implements Listener {
 
 	@EventHandler
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		if (Variables.killAbuseEnabled && Variables.respawnProtection != 0) {
-			PvPlayer player = ph.get(event.getPlayer());
-			if (player == null)
-				return;
-			player.setRespawnTime(System.currentTimeMillis());
+		if (CombatUtils.PMAllowed(event.getPlayer().getWorld().getName())) {
+			if (Variables.killAbuseEnabled && Variables.respawnProtection != 0) {
+				PvPlayer player = ph.get(event.getPlayer());
+				if (player == null)
+					return;
+				player.setRespawnTime(System.currentTimeMillis());
+			}
 		}
 	}
 
@@ -291,10 +297,11 @@ public class PlayerListener implements Listener {
 		if (pvpAttacker == null || pvpDefender == null)
 			return;
 		if (Variables.pvpBlood)
-			defender.getWorld().playEffect(defender.getLocation(), Effect.STEP_SOUND, Material.REDSTONE_WIRE);
+			defender.getWorld().playEffect(defender.getLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
 		if (!attacker.hasPermission("pvpmanager.nodisable")) {
-			if (Variables.disableFly && (attacker.isFlying() || attacker.getAllowFlight())) {
-				pvpAttacker.disableFly();
+			if (Variables.disableFly) {
+				if (attacker.isFlying() || attacker.getAllowFlight())
+					pvpAttacker.disableFly();
 				if (defender.isFlying() || defender.getAllowFlight())
 					pvpDefender.disableFly();
 			}
